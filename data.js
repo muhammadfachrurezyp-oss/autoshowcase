@@ -11,10 +11,10 @@ const CATEGORY_LABELS = { suv: "SUV", sedan: "Sedan", ev: "EV" };
 const CARS = [
   {
     id: 1,
-    name: "TerraPulse AWD 2026",
+    name: "Cherry J6 2026",
     category: "suv",
-    priceIDR: 585000000,
-    image: "images/terrapulse.svg",
+    priceIDR: 545000000,
+    image: "images/J6.png",
     imageAlt: "Mobil SUV TerraPulse AWD berwarna hijau",
     summary: "SUV tangguh untuk keluarga dan petualangan akhir pekan.",
     description: "TerraPulse AWD menawarkan performa andal, kabin lapang, dan fitur keselamatan modern untuk perjalanan harian maupun lintas kota.",
