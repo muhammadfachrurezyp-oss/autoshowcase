@@ -1,7 +1,7 @@
 const SITE_CONFIG = {
-  brand: "AutoShowcase",
-  whatsappNumber: "6281234567890",
-  email: "halo@autoshowcase.id",
+  brand: "RezyMobil",
+  whatsappNumber: "62852678983",
+  email: "RezyMobil@laku.com",
   siteUrl: "",
   showDemoNotice: true
 };
