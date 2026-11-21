@@ -1,0 +1,137 @@
+# Plan: AutoShowcase catalog upgrade
+
+## Decisions locked in
+
+| Area | Decision |
+|---|---|
+| Data | `data.js` loaded as a classic script that defines globals, with no fetch and no ES modules, so it works on `file://` |
+| Purpose | Portfolio demo with a visible "demo data" note and a placeholder WhatsApp number |
+| Contact | WhatsApp button in the modal and the contact card, prefilled with car name, price, and link |
+| Modal | Native `<dialog>`, keyboard-reachable cards, deep link `#car-3` |
+| URL state | `#car-N` for the open car, `?kategori=` for the filter, and an unknown value falls back to "all" |
+| Images | Self-hosted WebP with `width`/`height` and an error fallback |
+| Prices | Numeric IDR, formatted with `Intl.NumberFormat('id-ID')`, plus a sort dropdown |
+| Specs | `[{label, value}]` rendered as a table |
+| Rendering | Template strings plus an `escapeHTML` helper on every interpolation |
+| Dialog polish | Scroll lock, backdrop-click close, mobile full-height sheet, fade-in honoring reduced motion |
+| Out of scope | Dark mode, search, compare, favorites |
+
+## Files
+
+```
+index.html   style.css   data.js   script.js
+images/  terrapulse.webp, velox.webp, voltara.webp, kodiak.webp, placeholder.svg
+```
+
+Script order is `data.js` then `script.js`, both with `defer`.
+
+## data.js
+
+```js
+const SITE_CONFIG = {
+  brand: "AutoShowcase",
+  whatsappNumber: "6281234567890", // placeholder, digits only, country code first
+  email: "halo@autoshowcase.id",
+  siteUrl: "",                     // set at deploy; falls back to location.href
+  showDemoNotice: true
+};
+const CATEGORY_LABELS = { suv: "SUV", sedan: "Sedan", ev: "EV" };
+const CARS = [{
+  id: 1, name: "TerraPulse AWD 2026", category: "suv",
+  priceIDR: 585000000,
+  image: "images/terrapulse.webp", imageAlt: "…",
+  summary: "…", description: "…",
+  specs: [{ label: "Mesin", value: "1.5L Turbo" }, { label: "Transmisi", value: "CVT" }, …]
+}, …];
+```
+
+A small dev-time validator logs to the console for duplicate ids, missing fields, a non-numeric price, or an unknown category.
+
+## script.js behavior
+
+**State and rendering**
+- State is `{category, sort}`, with sort options "Rekomendasi" (data order), "Harga terendah", and "Harga tertinggi".
+- `render()` filters, sorts, builds the cards, and updates a visually hidden `aria-live="polite"` line such as "Menampilkan 3 mobil".
+- An empty-state message and a "Reset filter" button appear when nothing matches.
+- Filter buttons use `aria-pressed`. The sort control is a labeled `<select>`.
+
+**Cards**
+- Each card is an `<article>` with a real `<h3>` and a "Lihat spesifikasi" `<button>`. The button's `::after` is stretched over the card, so the whole card is clickable and tabbable without invalid markup.
+- Click handling is delegated on the grid.
+
+**URL state**
+- Filter and sort changes call `history.replaceState` to update `?kategori=…&urut=…`. I added `urut` for consistency, and it's cheap to drop.
+- Opening a car does `pushState` to `#car-N`, so Back closes the dialog.
+- `route()` runs on load and on `popstate`/`hashchange`:
+  - A matching `#car-N` opens that car.
+  - If the car is hidden by the active filter, it resets the filter to "all", re-renders, then opens.
+  - An unknown id such as `#car-99` is stripped and ignored.
+  - Section hashes (`#katalog`, `#tentang`, `#kontak`) are left to normal scrolling.
+- Closing via the UI uses `history.back()` if we pushed the entry. If the user landed directly on the deep link, it uses `replaceState` to clear the hash.
+
+**Dialog**
+- `showModal()` makes the background inert natively, and Esc is handled natively.
+- Backdrop click closes only when both `pointerdown` and `click` targeted the dialog itself, so dragging a text selection out of the dialog doesn't close it.
+- On `close`, remove the scroll-lock class and restore focus to the originating card button. If the grid was re-rendered and that node is gone, focus the new button with the same `data-id`.
+- `html.modal-open { overflow: hidden }` is paired with `scrollbar-gutter: stable` to avoid layout shift.
+
+**WhatsApp**
+- `buildWaUrl(car?)` builds `https://wa.me/<digits>?text=<encodeURIComponent(msg)>`.
+- The message is in Indonesian: car name, price, a test-drive request, and the link (`siteUrl || location.origin + pathname`, plus `#car-N`).
+- It replaces non-breaking spaces from `Intl` output with normal spaces. The contact card uses a generic message without a car.
+
+**Images**
+- A capture-phase `error` listener on the grid and the modal swaps to `placeholder.svg` once, guarded by a `data-fallback` flag to prevent loops.
+- Every `<img>` gets `width`/`height` attributes (900×600), plus `aspect-ratio` in CSS to prevent layout shift.
+
+## HTML and CSS changes
+
+- **Demo bar:** a slim bar above the navbar reading "Situs demo: data kendaraan, harga, dan nomor WhatsApp hanyalah contoh." It is controlled by `showDemoNotice`.
+- **Anchors:** `html { scroll-padding-top: 72px }`, and `scroll-behavior: smooth` only under `prefers-reduced-motion: no-preference`.
+- **Dialog markup:** `<dialog aria-labelledby="modal-title">` replaces the div modal, with a 44px close button and a sticky footer holding the WhatsApp CTA so it stays visible while the body scrolls.
+- **Spec table:** a `<table>` with `<th scope="row">`.
+- **Mobile (≤640px):** the dialog is full width, bottom-anchored, `max-height: 92dvh`, with rounded top corners. The image has a fixed aspect ratio and the body scrolls.
+- **Motion:** a fade and slight rise on `dialog[open]` and `::backdrop`, disabled under `prefers-reduced-motion: reduce`. Closing is instant, which avoids the complexity of animating `display`.
+- **Focus:** a visible `:focus-visible` outline on all interactive elements.
+- **Contrast:** `#ef4444` on white is only about 3.8:1, which fails AA for small text. Use `#dc2626` (about 4.8:1) for `.price` and primary buttons, with `#b91c1c` on hover. The WhatsApp button uses a dark green (around `#0b7a4f`) with white text, since the brand-bright green fails contrast.
+- **Contact card:** WhatsApp becomes the primary button, with the email as a secondary text link.
+
+## Edge cases covered
+
+- Opening `index.html` directly from disk works, since there are no fetches or modules.
+- Handled input cases: unknown `?kategori=`, unknown `#car-id`, and a deep-linked car hidden by a filter.
+- Back-button behavior is correct for both pushed and directly landed deep links.
+- The image fallback can't loop.
+- Long car names wrap cleanly in cards and the dialog title.
+- The WhatsApp text is URL-encoded and safe with "Rp", "°", and newlines.
+- A missing or invalid WhatsApp number logs a console warning.
+- Rapid filter and sort clicks are safe, because render is idempotent and replaces the whole grid.
+
+## Implementation order
+
+1. Create `data.js` (config, labels, cars, validator) and wire the script order.
+2. Add the CSS changes: tokens, contrast fixes, focus styles, the sort control, empty state, spec table, and the dialog and mobile sheet.
+3. Rework the markup: demo bar, sort select, `<dialog>`, and the contact card.
+4. Rewrite `script.js` in this order: helpers (`escapeHTML`, `formatIDR`, `buildWaUrl`), then state, then `render` with filter/sort/live region, then URL sync, then dialog and routing, then the image fallback.
+5. Prepare the images: self-hosted WebP at 900×600 (aim for under about 100 KB each) plus `placeholder.svg`.
+6. Run the verification checklist and fix issues.
+
+## Verification checklist (manual)
+
+- **Keyboard only:** Tab to a card, Enter opens the dialog, focus lands inside it, Esc closes, and focus returns to the same card.
+- **Deep links:** `index.html#car-3` opens directly. `?kategori=ev#car-1` resets the filter to "all" and opens car 1. `#car-99` is stripped.
+- **History:** Back closes the dialog, and Forward reopens it.
+- **Mobile:** at 360×640, the body scrolls and the CTA stays visible.
+- **Reduced motion:** with the OS setting on, no fade or smooth scroll.
+- **Images:** rename one file to confirm the placeholder appears once.
+- **WhatsApp:** the prefilled text is correct on mobile and desktop.
+- **Contrast:** the browser's accessibility audit shows no AA failures.
+
+## Assumptions I made without asking
+
+- Deployment is static hosting (GitHub Pages or Netlify). Set `siteUrl` at deploy time.
+- There is no automated test suite, since this is a no-build vanilla project. The manual checklist above is the gate.
+- Images will be ones you have rights to (your own, licensed, or CC0), because the model names are fictional. Until you have them, `placeholder.svg` fills in. Add credits to the footer if a license requires it.
+- UI copy stays Indonesian only, with no i18n layer.
+
+Want me to implement this now? I'd start with `data.js` and `script.js`, then the HTML and CSS changes.

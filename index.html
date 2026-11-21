@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Katalog kendaraan demo AutoShowcase">
+  <title>AutoShowcase — Katalog Kendaraan</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="data.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div id="demo-bar" class="demo-bar" hidden>
+    Situs demo: data kendaraan, harga, dan nomor WhatsApp hanyalah contoh.
+  </div>
+
+  <header class="navbar">
+    <a class="brand" href="#" aria-label="AutoShowcase beranda">Auto<span>Showcase</span></a>
+    <nav aria-label="Navigasi utama">
+      <a href="#katalog">Katalog</a>
+      <a href="#tentang">Tentang</a>
+      <a href="#kontak">Kontak</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow">Temukan perjalanan berikutnya</p>
+        <h1 id="hero-title">Mobil yang pas untuk setiap cerita.</h1>
+        <p>Jelajahi pilihan SUV, sedan, dan kendaraan listrik dalam satu katalog yang mudah.</p>
+        <a class="button button-primary" href="#katalog">Lihat katalog</a>
+      </div>
+    </section>
+
+    <section id="katalog" class="catalog section" aria-labelledby="catalog-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Pilihan tersedia</p>
+          <h2 id="catalog-title">Katalog kendaraan</h2>
+        </div>
+        <label class="sort-label" for="sort-select">
+          Urutkan
+          <select id="sort-select">
+            <option value="recommended">Rekomendasi</option>
+            <option value="lowest">Harga terendah</option>
+            <option value="highest">Harga tertinggi</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="filters" role="group" aria-label="Filter kategori">
+        <button type="button" data-category="all" aria-pressed="true">Semua</button>
+        <button type="button" data-category="suv" aria-pressed="false">SUV</button>
+        <button type="button" data-category="sedan" aria-pressed="false">Sedan</button>
+        <button type="button" data-category="ev" aria-pressed="false">EV</button>
+      </div>
+
+      <p id="catalog-status" class="visually-hidden" aria-live="polite"></p>
+      <div id="catalog-grid" class="catalog-grid"></div>
+    </section>
+
+    <section id="tentang" class="about section" aria-labelledby="about-title">
+      <p class="eyebrow">Tentang AutoShowcase</p>
+      <h2 id="about-title">Pilihan transparan untuk keputusan yang lebih mudah.</h2>
+      <p>Kami menyajikan informasi kendaraan secara ringkas, jelas, dan mudah dibandingkan.</p>
+    </section>
+
+    <section id="kontak" class="contact section" aria-labelledby="contact-title">
+      <div>
+        <p class="eyebrow">Siap membantu</p>
+        <h2 id="contact-title">Hubungi kami</h2>
+        <p>Ada pertanyaan atau ingin menjadwalkan tes jalan? Tim kami siap membantu.</p>
+      </div>
+      <div class="contact-actions">
+        <a id="contact-wa" class="button button-whatsapp" href="#" rel="noopener" target="_blank">Tanya via WhatsApp</a>
+        <a id="contact-email" class="email-link" href="#">halo@autoshowcase.id</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; <span id="year"></span> AutoShowcase</p>
+  </footer>
+
+  <dialog id="car-dialog" aria-labelledby="modal-title">
+    <div class="dialog-shell">
+      <button id="dialog-close" class="dialog-close" type="button" aria-label="Tutup detail">×</button>
+      <div id="dialog-content" class="dialog-content"></div>
+      <footer class="dialog-footer">
+        <a id="dialog-wa" class="button button-whatsapp" href="#" rel="noopener" target="_blank">Tanya via WhatsApp</a>
+      </footer>
+    </div>
+  </dialog>
+</body>
+</html>
